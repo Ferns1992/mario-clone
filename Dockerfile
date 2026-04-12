@@ -16,6 +16,6 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV DB_PATH=/app/data/mario.db
 
-EXPOSE 3000
+EXPOSE 3030
 
 CMD ["node", "server.js"]

@@ -6,7 +6,7 @@ services:
     container_name: mario-clone
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3030:3000"
     volumes:
       - mario-data:/app/data
     environment:
