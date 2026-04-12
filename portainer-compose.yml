@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mario:
+    image: mario-clone:latest
+    container_name: mario-clone
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - mario-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/app/data/mario.db
+    networks:
+      - mario-network
+
+networks:
+  mario-network:
+    driver: bridge
+
+volumes:
+  mario-data:
+    name: mario-clone-data
+    driver: local

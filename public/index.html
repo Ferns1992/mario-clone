@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mario Clone</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas" width="800" height="480"></canvas>
+    <div id="ui-overlay">
+      <div id="score-display">SCORE: <span id="score">0</span></div>
+      <div id="coins-display">COINS: <span id="coins">0</span></div>
+      <div id="lives-display">LIVES: <span id="lives">3</span></div>
+      <div id="level-display">LEVEL: <span id="level">1</span></div>
+    </div>
+    <div id="menu-overlay">
+      <h1>MARIO CLONE</h1>
+      <div id="player-input">
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+      </div>
+      <button id="start-btn">START GAME</button>
+      <button id="scores-btn">HIGH SCORES</button>
+      <div id="controls-info">
+        <p>Controls: Arrow Keys / WASD to move, Space to jump</p>
+      </div>
+    </div>
+    <div id="gameover-overlay" class="hidden">
+      <h1>GAME OVER</h1>
+      <p>Final Score: <span id="final-score">0</span></p>
+      <button id="restart-btn">PLAY AGAIN</button>
+      <button id="menu-btn">MAIN MENU</button>
+    </div>
+    <div id="scores-overlay" class="hidden">
+      <h1>HIGH SCORES</h1>
+      <div id="scores-list"></div>
+      <button id="back-btn">BACK</button>
+    </div>
+    <div id="level-complete-overlay" class="hidden">
+      <h1>LEVEL COMPLETE!</h1>
+      <p>Score: <span id="level-score">0</span></p>
+      <button id="next-level-btn">NEXT LEVEL</button>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

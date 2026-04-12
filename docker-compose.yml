@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mario:
+    build: .
+    container_name: mario-clone
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - mario-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/app/data/mario.db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mario-data:
+    driver: local
