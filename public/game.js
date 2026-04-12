@@ -86,8 +86,12 @@ const scoresOverlay = document.getElementById('scores-overlay');
 const levelCompleteOverlay = document.getElementById('level-complete-overlay');
 
 function initAudio() {
-  if (audioContext) return;
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
 }
 
 function playNote(freq, duration, type = 'square', volume = 0.1, delay = 0) {
@@ -296,6 +300,22 @@ document.getElementById('next-level-btn').addEventListener('click', () => {
   nextLevel();
 });
 
+document.getElementById('music-btn').addEventListener('click', () => {
+  initAudio();
+  musicEnabled = !musicEnabled;
+  document.getElementById('music-btn').textContent = `MUSIC: ${musicEnabled ? 'ON' : 'OFF'}`;
+  if (!musicEnabled) stopMusic();
+});
+
+document.getElementById('sound-btn').addEventListener('click', () => {
+  initAudio();
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-btn').textContent = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
+  if (soundEnabled) {
+    playNote(523, 0.1, 'square', 0.1);
+  }
+});
+
 document.getElementById('playerName').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     initAudio();
@@ -331,6 +351,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'n' || e.key === 'N') {
     soundEnabled = !soundEnabled;
   }
+});
+
+document.addEventListener('click', () => {
+  initAudio();
 });
 
 document.addEventListener('keyup', (e) => {
