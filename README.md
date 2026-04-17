@@ -1,6 +1,6 @@
 # Mario Clone
 
-A classic 2D platformer game built with HTML5 Canvas, Node.js, Express, and SQLite. Features Mario-style music, sound effects, persistent high scores, and Docker deployment support.
+A classic 2D platformer game built with HTML5 Canvas, Node.js, Express, and SQLite. Features Mario-style music, sound effects, user authentication, persistent high scores, and Docker deployment support.
 
 ## Features
 
@@ -12,25 +12,11 @@ A classic 2D platformer game built with HTML5 Canvas, Node.js, Express, and SQLi
 - Power-ups: Mushrooms, Fire Flowers, Stars
 - Enemies: Goombas and Koopas (with shell mechanics)
 - Coyote time and jump buffering for smooth controls
+- **User authentication system with login/registration**
+- **Admin panel to manage users**
 - Persistent high scores with SQLite database
 - Player statistics tracking
 - Docker support for easy deployment
-
-## Controls
-
-- **Move Left:** Arrow Left / A
-- **Move Right:** Arrow Right / D
-- **Jump:** Space / Arrow Up / W (hold for higher jump)
-- **M:** Toggle music
-- **N:** Toggle sound effects
-
-## Tech Stack
-
-- **Frontend:** HTML5 Canvas + Vanilla JavaScript
-- **Backend:** Node.js + Express.js
-- **Database:** SQLite (via sql.js)
-- **Container:** Docker
-- **Audio:** Web Audio API (procedurally generated sounds)
 
 ## Quick Start
 
@@ -49,7 +35,42 @@ Open http://localhost:3030 in your browser.
 docker-compose up -d
 ```
 
-The game will be available at http://localhost:3030
+## User Authentication
+
+### Default Admin Login
+- **Username:** `admin`
+- **Password:** `admin`
+
+### For Players
+1. Click "Create Account" on login screen
+2. Register with username and password
+3. Wait for admin approval
+4. Login with approved account
+
+### Admin Features
+After logging in as admin:
+- Click the **ADMIN** button (yellow)
+- **Pending Users tab** - Approve or reject new registrations
+- **All Users tab** - Edit users:
+  - Change password
+  - Change role (admin/player)
+
+## Controls
+
+- **Move Left:** Arrow Left / A
+- **Move Right:** Arrow Right / D
+- **Jump:** Space / Arrow Up / W (hold for higher jump)
+- **M:** Toggle music
+- **N:** Toggle sound effects
+
+## Tech Stack
+
+- **Frontend:** HTML5 Canvas + Vanilla JavaScript
+- **Backend:** Node.js + Express.js
+- **Database:** SQLite (via sql.js)
+- **Authentication:** Session-based with JWT tokens
+- **Container:** Docker
+- **Audio:** Web Audio API (procedurally generated sounds)
 
 ## Game Elements
 
@@ -83,20 +104,53 @@ Click the MUSIC/SOUND buttons on the menu to toggle audio.
 
 ## API Endpoints
 
+### Public Endpoints (No Auth Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/health` | Health check |
+| POST | `/api/login` | User login |
+| POST | `/api/register` | Register new user |
+
+### Protected Endpoints (Auth Required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | GET | `/api/scores` | Get top 10 high scores |
 | POST | `/api/scores` | Submit new score |
 | GET | `/api/players/:name` | Get player stats |
-| POST | `/api/players` | Create/get player |
-| GET | `/api/settings` | Get game settings |
+| GET | `/api/me` | Get current user info |
 
-### Submit Score Example
+### Admin Endpoints (Admin Only)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users` | List all users |
+| GET | `/api/users/pending` | List pending users |
+| POST | `/api/users/:id/approve` | Approve user |
+| POST | `/api/users/:id/reject` | Reject user |
+| PUT | `/api/users/:id/password` | Change user password |
+| PUT | `/api/users/:id/role` | Change user role |
+| PUT | `/api/settings/:key` | Update game settings |
 
+### API Examples
+
+**Login:**
+```bash
+curl -X POST http://localhost:3030/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}'
+```
+
+**Register:**
+```bash
+curl -X POST http://localhost:3030/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"player1","password":"password123"}'
+```
+
+**Submit Score (with auth):**
 ```bash
 curl -X POST http://localhost:3030/api/scores \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{"playerName":"MarioFan","score":5000,"level":3,"coinsCollected":25,"enemiesStomped":12}'
 ```
 
@@ -126,21 +180,36 @@ docker run -d -p 3030:3000 \
   mario-clone
 ```
 
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PORT | 3030 | Server port |
+| DB_PATH | ./data/mario.db | Database file path |
+| ADMIN_USER | admin | Default admin username |
+| ADMIN_PASS | admin | Default admin password |
+
 ## Data Persistence
 
 Game data is stored in a SQLite database located at:
 - Local: `./data/mario.db`
 - Docker: `/app/data/mario.db` (persisted via volume)
 
+Database contains:
+- Users table (username, password hash, role, status)
+- Players table (game player names linked to users)
+- Scores table (game scores and statistics)
+- Game settings table
+
 ## Project Structure
 
 ```
 mario-clone/
 ├── public/
-│   ├── index.html     # Main game page
+│   ├── index.html     # Main game page with login/register/admin
 │   ├── game.js       # Game logic with audio
 │   └── style.css     # Styling
-├── server.js         # Express server
+├── server.js         # Express server with auth
 ├── database.js       # SQLite database module
 ├── package.json      # Dependencies
 ├── Dockerfile        # Docker image
@@ -151,13 +220,6 @@ mario-clone/
 └── SPEC.md           # Project specification
 ```
 
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| PORT | 3030 | Server port |
-| DB_PATH | ./data/mario.db | Database file path |
-
 ## Browser Compatibility
 
 Works best in modern browsers:
@@ -167,6 +229,13 @@ Works best in modern browsers:
 - Safari 11+
 
 Note: Audio requires user interaction (click) to start due to browser autoplay policies.
+
+## Security
+
+- Passwords are hashed using SHA-256
+- Session tokens expire after 24 hours
+- New users require admin approval
+- Role-based access control for admin features
 
 ## License
 
