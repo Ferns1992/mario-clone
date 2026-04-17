@@ -14,8 +14,67 @@
       <div id="coins-display">COINS: <span id="coins">0</span></div>
       <div id="lives-display">LIVES: <span id="lives">3</span></div>
       <div id="level-display">LEVEL: <span id="level">1</span></div>
+      <button id="logout-btn" class="hidden">LOGOUT</button>
+      <button id="admin-btn" class="hidden" onclick="showAdminPanel()">ADMIN</button>
     </div>
-    <div id="menu-overlay">
+    
+    <div id="login-overlay">
+      <div id="login-box">
+        <h1>MARIO CLONE</h1>
+        <p>Login Required</p>
+        <input type="text" id="login-username" placeholder="Username" autocomplete="off">
+        <input type="password" id="login-password" placeholder="Password">
+        <button id="login-btn">LOGIN</button>
+        <p id="login-error" class="hidden">Invalid credentials</p>
+        <div id="register-link">
+          <a href="#" id="show-register">Create Account</a>
+        </div>
+      </div>
+      
+      <div id="register-box" class="hidden">
+        <h1>MARIO CLONE</h1>
+        <p>Create Account</p>
+        <input type="text" id="reg-username" placeholder="Username" autocomplete="off">
+        <input type="password" id="reg-password" placeholder="Password">
+        <select id="reg-role">
+          <option value="player">Player</option>
+        </select>
+        <button id="register-btn">REGISTER</button>
+        <p id="register-error" class="hidden"></p>
+        <div id="login-link">
+          <a href="#" id="show-login">Back to Login</a>
+        </div>
+      </div>
+    </div>
+    
+    <div id="admin-overlay" class="hidden">
+      <div id="admin-panel">
+        <h1>ADMIN PANEL</h1>
+        <div id="admin-tabs">
+          <button id="tab-pending" class="admin-tab active">Pending Users</button>
+          <button id="tab-users" class="admin-tab">All Users</button>
+        </div>
+        <div id="admin-content">
+          <div id="pending-list" class="admin-list"></div>
+          <div id="users-list" class="admin-list hidden"></div>
+        </div>
+        <div id="user-edit" class="hidden">
+          <h3>Edit User</h3>
+          <input type="hidden" id="edit-user-id">
+          <p>Username: <span id="edit-username"></span></p>
+          <input type="password" id="edit-new-password" placeholder="New Password">
+          <select id="edit-role">
+            <option value="player">Player</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button id="save-user-btn">SAVE</button>
+          <button id="cancel-edit-btn">CANCEL</button>
+        </div>
+        <button id="close-admin-btn">CLOSE</button>
+      </div>
+    </div>
+    
+    <div id="menu-overlay" class="hidden">
       <h1>MARIO CLONE</h1>
       <div id="player-input">
         <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">

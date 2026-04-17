@@ -29,6 +29,8 @@ let audioContext = null;
 let musicPlaying = false;
 let soundEnabled = true;
 let musicEnabled = true;
+let authToken = localStorage.getItem('mario_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('mario_user') || 'null');
 
 const keys = {
   left: false,
@@ -316,6 +318,292 @@ document.getElementById('sound-btn').addEventListener('click', () => {
   }
 });
 
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('login-password').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') doLogin();
+});
+
+document.getElementById('show-register').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('login-box').classList.add('hidden');
+  document.getElementById('register-box').classList.remove('hidden');
+});
+
+document.getElementById('show-login').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('register-box').classList.add('hidden');
+  document.getElementById('login-box').classList.remove('hidden');
+});
+
+document.getElementById('register-btn').addEventListener('click', doRegister);
+document.getElementById('reg-password').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') doRegister();
+});
+
+document.getElementById('logout-btn').addEventListener('click', doLogout);
+
+document.getElementById('admin-btn').addEventListener('click', showAdminPanel);
+
+document.getElementById('tab-pending').addEventListener('click', () => {
+  document.getElementById('tab-pending').classList.add('active');
+  document.getElementById('tab-users').classList.remove('active');
+  document.getElementById('pending-list').classList.remove('hidden');
+  document.getElementById('users-list').classList.add('hidden');
+  document.getElementById('user-edit').classList.add('hidden');
+  loadPendingUsers();
+});
+
+document.getElementById('tab-users').addEventListener('click', () => {
+  document.getElementById('tab-users').classList.add('active');
+  document.getElementById('tab-pending').classList.remove('active');
+  document.getElementById('users-list').classList.remove('hidden');
+  document.getElementById('pending-list').classList.add('hidden');
+  document.getElementById('user-edit').classList.add('hidden');
+  loadAllUsers();
+});
+
+document.getElementById('close-admin-btn').addEventListener('click', () => {
+  document.getElementById('admin-overlay').classList.add('hidden');
+});
+
+document.getElementById('save-user-btn').addEventListener('click', saveUserEdit);
+document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+  document.getElementById('user-edit').classList.add('hidden');
+});
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  
+  if (!username || !password) {
+    document.getElementById('login-error').textContent = 'Please enter username and password';
+    document.getElementById('login-error').classList.remove('hidden');
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      authToken = data.token;
+      currentUser = data.user;
+      localStorage.setItem('mario_token', authToken);
+      localStorage.setItem('mario_user', JSON.stringify(currentUser));
+      showGameMenu();
+    } else {
+      document.getElementById('login-error').textContent = data.error || 'Login failed';
+      document.getElementById('login-error').classList.remove('hidden');
+    }
+  } catch (err) {
+    document.getElementById('login-error').textContent = 'Connection error';
+    document.getElementById('login-error').classList.remove('hidden');
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const role = document.getElementById('reg-role').value;
+  
+  if (!username || !password) {
+    document.getElementById('register-error').textContent = 'Please enter username and password';
+    document.getElementById('register-error').classList.remove('hidden');
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API_URL}/api/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      document.getElementById('register-error').textContent = 'Registration submitted! Wait for admin approval.';
+      document.getElementById('register-error').classList.remove('hidden');
+      document.getElementById('register-error').style.color = '#00A800';
+      setTimeout(() => {
+        document.getElementById('register-box').classList.add('hidden');
+        document.getElementById('login-box').classList.remove('hidden');
+        document.getElementById('reg-username').value = '';
+        document.getElementById('reg-password').value = '';
+        document.getElementById('register-error').classList.add('hidden');
+        document.getElementById('register-error').style.color = '';
+      }, 2000);
+    } else {
+      document.getElementById('register-error').textContent = data.error || 'Registration failed';
+      document.getElementById('register-error').classList.remove('hidden');
+    }
+  } catch (err) {
+    document.getElementById('register-error').textContent = 'Connection error';
+    document.getElementById('register-error').classList.remove('hidden');
+  }
+}
+
+function doLogout() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('mario_token');
+  localStorage.removeItem('mario_user');
+  document.getElementById('login-overlay').classList.remove('hidden');
+  document.getElementById('menu-overlay').classList.add('hidden');
+  document.getElementById('logout-btn').classList.add('hidden');
+  document.getElementById('admin-btn').classList.add('hidden');
+}
+
+async function showGameMenu() {
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('menu-overlay').classList.remove('hidden');
+  document.getElementById('logout-btn').classList.remove('hidden');
+  if (currentUser && currentUser.role === 'admin') {
+    document.getElementById('admin-btn').classList.remove('hidden');
+  }
+}
+
+async function showAdminPanel() {
+  document.getElementById('admin-overlay').classList.remove('hidden');
+  loadPendingUsers();
+}
+
+async function loadPendingUsers() {
+  try {
+    const res = await fetch(`${API_URL}/api/users/pending`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    
+    const list = document.getElementById('pending-list');
+    if (data.users && data.users.length > 0) {
+      list.innerHTML = data.users.map(u => `
+        <div class="user-item">
+          <div class="user-info">
+            <div class="user-name">${u.username}</div>
+            <div class="user-role ${u.role}">${u.role}</div>
+          </div>
+          <div class="user-actions">
+            <button class="btn-approve" onclick="approveUser(${u.id})">Approve</button>
+            <button class="btn-reject" onclick="rejectUser(${u.id})">Reject</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      list.innerHTML = '<p style="text-align: center; color: #888;">No pending users</p>';
+    }
+  } catch (err) {
+    console.error('Error loading pending users:', err);
+  }
+}
+
+async function loadAllUsers() {
+  try {
+    const res = await fetch(`${API_URL}/api/users`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    
+    const list = document.getElementById('users-list');
+    if (data.users && data.users.length > 0) {
+      list.innerHTML = data.users.map(u => `
+        <div class="user-item">
+          <div class="user-info">
+            <div class="user-name">${u.username}</div>
+            <div class="user-role ${u.role}">${u.role}</div>
+            <div class="user-status ${u.status}">${u.status}</div>
+          </div>
+          <div class="user-actions">
+            <button class="btn-edit" onclick="editUser(${u.id}, '${u.username}', '${u.role}')">Edit</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      list.innerHTML = '<p style="text-align: center; color: #888;">No users</p>';
+    }
+  } catch (err) {
+    console.error('Error loading users:', err);
+  }
+}
+
+async function approveUser(id) {
+  try {
+    await fetch(`${API_URL}/api/users/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    loadPendingUsers();
+  } catch (err) {
+    console.error('Error approving user:', err);
+  }
+}
+
+async function rejectUser(id) {
+  try {
+    await fetch(`${API_URL}/api/users/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    loadPendingUsers();
+  } catch (err) {
+    console.error('Error rejecting user:', err);
+  }
+}
+
+function editUser(id, username, role) {
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('edit-username').textContent = username;
+  document.getElementById('edit-role').value = role;
+  document.getElementById('edit-new-password').value = '';
+  document.getElementById('user-edit').classList.remove('hidden');
+}
+
+async function saveUserEdit() {
+  const id = document.getElementById('edit-user-id').value;
+  const newPassword = document.getElementById('edit-new-password').value;
+  const role = document.getElementById('edit-role').value;
+  
+  try {
+    if (newPassword) {
+      await fetch(`${API_URL}/api/users/${id}/password`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+    }
+    
+    await fetch(`${API_URL}/api/users/${id}/role`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ role })
+    });
+    
+    document.getElementById('user-edit').classList.add('hidden');
+    loadAllUsers();
+  } catch (err) {
+    console.error('Error saving user:', err);
+  }
+}
+
+function checkAuth() {
+  if (authToken && currentUser) {
+    showGameMenu();
+  }
+}
+
+checkAuth();
+
 document.getElementById('playerName').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     initAudio();
@@ -374,6 +662,7 @@ document.addEventListener('keyup', (e) => {
 });
 
 function startGame() {
+  initAudio();
   playerName = document.getElementById('playerName').value.trim() || 'Player';
   if (playerName.length === 0) playerName = 'Player';
   
@@ -1092,9 +1381,12 @@ async function gameOver() {
   gameoverOverlay.classList.remove('hidden');
   
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    
     await fetch(`${API_URL}/api/scores`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({
         playerName,
         score,
@@ -1162,7 +1454,10 @@ async function showHighScores() {
   menuOverlay.classList.add('hidden');
   
   try {
-    const response = await fetch(`${API_URL}/api/scores`);
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    
+    const response = await fetch(`${API_URL}/api/scores`, { headers });
     const data = await response.json();
     
     const scoresList = document.getElementById('scores-list');

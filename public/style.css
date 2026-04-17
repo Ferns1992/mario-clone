@@ -37,13 +37,16 @@ body {
   font-size: 18px;
   font-weight: bold;
   text-shadow: 2px 2px 0 #000;
-  pointer-events: none;
 }
 
 #ui-overlay div {
   background: rgba(0, 0, 0, 0.5);
   padding: 5px 15px;
   border-radius: 4px;
+}
+
+#ui-overlay button {
+  pointer-events: auto;
 }
 
 #menu-overlay,
@@ -202,4 +205,331 @@ button:active {
 #level-complete-overlay p {
   font-size: 24px;
   margin-bottom: 20px;
+}
+
+#login-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  z-index: 100;
+}
+
+#login-box {
+  background: #1a1a2e;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  border: 3px solid #E52521;
+  box-shadow: 0 0 40px rgba(229, 37, 33, 0.3);
+}
+
+#login-box h1 {
+  font-size: 36px;
+  color: #E52521;
+  margin-bottom: 10px;
+}
+
+#login-box > p {
+  color: #888;
+  margin-bottom: 25px;
+}
+
+#login-box input {
+  display: block;
+  width: 250px;
+  padding: 12px 20px;
+  margin: 10px auto;
+  font-size: 16px;
+  border: 2px solid #5C94FC;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+}
+
+#login-box input:focus {
+  outline: none;
+  border-color: #FFD700;
+}
+
+#login-btn {
+  background: #E52521;
+  color: white;
+  box-shadow: 0 4px 0 #A52521;
+  margin-top: 15px;
+}
+
+#login-error {
+  color: #E52521;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+#logout-btn {
+  background: #E52521;
+  color: white;
+  padding: 5px 15px;
+  font-size: 12px;
+  pointer-events: auto;
+  margin-left: 20px;
+  box-shadow: none;
+}
+
+#sound-controls {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+#sound-controls button {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+#admin-btn {
+  background: #FFD700;
+  color: #000;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+#register-box {
+  background: #1a1a2e;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  border: 3px solid #00A800;
+  box-shadow: 0 0 40px rgba(0, 168, 0, 0.3);
+}
+
+#register-box h1 {
+  font-size: 36px;
+  color: #00A800;
+  margin-bottom: 10px;
+}
+
+#register-box input,
+#register-box select {
+  display: block;
+  width: 250px;
+  padding: 12px 20px;
+  margin: 10px auto;
+  font-size: 16px;
+  border: 2px solid #00A800;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+}
+
+#register-box input:focus,
+#register-box select:focus {
+  outline: none;
+  border-color: #FFD700;
+}
+
+#register-btn {
+  background: #00A800;
+  color: white;
+  box-shadow: 0 4px 0 #006600;
+  margin-top: 15px;
+}
+
+#register-link,
+#login-link {
+  margin-top: 20px;
+}
+
+#register-link a,
+#login-link a {
+  color: #5C94FC;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+#register-link a:hover,
+#login-link a:hover {
+  text-decoration: underline;
+}
+
+#admin-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#admin-panel {
+  background: #1a1a2e;
+  padding: 30px;
+  border-radius: 16px;
+  border: 3px solid #FFD700;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#admin-panel h1 {
+  font-size: 28px;
+  color: #FFD700;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+#admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.admin-tab {
+  padding: 10px 20px;
+  font-size: 14px;
+  background: #333;
+  color: #fff;
+  flex: 1;
+}
+
+.admin-tab.active {
+  background: #FFD700;
+  color: #000;
+}
+
+.admin-list {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: bold;
+  color: #fff;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #888;
+}
+
+.user-role.admin {
+  color: #FFD700;
+}
+
+.user-role.player {
+  color: #5C94FC;
+}
+
+.user-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #333;
+}
+
+.user-status.pending {
+  background: #E52521;
+}
+
+.user-status.approved {
+  background: #00A800;
+}
+
+.user-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.user-actions button {
+  padding: 5px 10px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.btn-approve {
+  background: #00A800;
+  color: white;
+}
+
+.btn-reject {
+  background: #E52521;
+  color: white;
+}
+
+.btn-edit {
+  background: #5C94FC;
+  color: white;
+}
+
+#user-edit {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+#user-edit h3 {
+  color: #FFD700;
+  margin-bottom: 15px;
+}
+
+#user-edit p {
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+#user-edit input,
+#user-edit select {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+}
+
+#user-edit button {
+  padding: 10px 20px;
+  font-size: 14px;
+  margin: 5px;
+}
+
+#close-admin-btn {
+  margin-top: 20px;
+  background: #666;
+  color: white;
 }

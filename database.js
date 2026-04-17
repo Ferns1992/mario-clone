@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'data', 'mario.db');
 
@@ -10,6 +11,10 @@ if (!fs.existsSync(dir)) {
 }
 
 let db = null;
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 async function initDb() {
   const SQL = await initSqlJs();
@@ -22,10 +27,23 @@ async function initDb() {
   }
   
   db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'player',
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  db.run(`
     CREATE TABLE IF NOT EXISTS players (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT UNIQUE NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      user_id INTEGER,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
   
@@ -52,6 +70,15 @@ async function initDb() {
   
   db.run(`CREATE INDEX IF NOT EXISTS idx_scores_player ON scores(player_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_scores_score ON scores(score DESC)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`);
+  
+  const adminExists = db.exec("SELECT COUNT(*) FROM users WHERE role = 'admin'")[0]?.values[0][0] || 0;
+  if (adminExists === 0) {
+    const adminPass = process.env.ADMIN_PASS || 'admin';
+    db.run("INSERT INTO users (username, password, role, status) VALUES (?, ?, 'admin', 'approved')", 
+      [process.env.ADMIN_USER || 'admin', hashPassword(adminPass)]);
+    console.log(`Default admin created: admin / ${adminPass}`);
+  }
   
   saveDb();
   
@@ -66,21 +93,117 @@ function saveDb() {
   }
 }
 
-function getPlayerByName(name) {
-  const stmt = db.prepare('SELECT * FROM players WHERE name = ?');
-  stmt.bind([name]);
-  if (stmt.step()) {
-    const row = stmt.getAsObject();
-    stmt.free();
-    return row;
-  }
-  stmt.free();
-  return null;
+function getUserByUsername(username) {
+  const result = db.exec(`SELECT * FROM users WHERE username = '${username.replace(/'/g, "''")}'`);
+  if (!result[0] || !result[0].values[0]) return null;
+  
+  const cols = result[0].columns;
+  const vals = result[0].values[0];
+  const user = {};
+  cols.forEach((col, i) => user[col] = vals[i]);
+  return user;
 }
 
-function createPlayer(name) {
+function getUserById(id) {
+  const result = db.exec(`SELECT * FROM users WHERE id = ${id}`);
+  if (!result[0] || !result[0].values[0]) return null;
+  
+  const cols = result[0].columns;
+  const vals = result[0].values[0];
+  const user = {};
+  cols.forEach((col, i) => user[col] = vals[i]);
+  return user;
+}
+
+function createUser(username, password, role = 'player') {
   try {
-    db.run('INSERT INTO players (name) VALUES (?)', [name]);
+    db.run("INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, 'pending')", 
+      [username, hashPassword(password), role]);
+    saveDb();
+    return getUserByUsername(username);
+  } catch (e) {
+    return null;
+  }
+}
+
+function approveUser(userId) {
+  db.run(`UPDATE users SET status = 'approved' WHERE id = ${userId}`);
+  saveDb();
+}
+
+function rejectUser(userId) {
+  db.run(`DELETE FROM users WHERE id = ${userId}`);
+  saveDb();
+}
+
+function updateUserPassword(userId, newPassword) {
+  db.run(`UPDATE users SET password = ? WHERE id = ${userId}`, [hashPassword(newPassword)]);
+  saveDb();
+}
+
+function updateUserRole(userId, newRole) {
+  db.run(`UPDATE users SET role = ? WHERE id = ${userId}`, [newRole]);
+  saveDb();
+}
+
+function getAllUsers() {
+  const result = db.exec("SELECT id, username, role, status, created_at FROM users ORDER BY created_at DESC");
+  if (!result[0]) return [];
+  
+  return result[0].values.map(row => ({
+    id: row[0],
+    username: row[1],
+    role: row[2],
+    status: row[3],
+    created_at: row[4]
+  }));
+}
+
+function getPendingUsers() {
+  const result = db.exec("SELECT id, username, role, created_at FROM users WHERE status = 'pending' ORDER BY created_at DESC");
+  if (!result[0]) return [];
+  
+  return result[0].values.map(row => ({
+    id: row[0],
+    username: row[1],
+    role: row[2],
+    created_at: row[3]
+  }));
+}
+
+function verifyUser(username, password) {
+  const user = getUserByUsername(username);
+  if (!user) return null;
+  if (user.password !== hashPassword(password)) return null;
+  if (user.status !== 'approved') return null;
+  return user;
+}
+
+function getPlayerByUserId(userId) {
+  const result = db.exec(`SELECT * FROM players WHERE user_id = ${userId}`);
+  if (!result[0] || !result[0].values[0]) return null;
+  
+  const cols = result[0].columns;
+  const vals = result[0].values[0];
+  const player = {};
+  cols.forEach((col, i) => player[col] = vals[i]);
+  return player;
+}
+
+function getPlayerByName(name) {
+  const result = db.exec(`SELECT * FROM players WHERE name = '${name.replace(/'/g, "''")}'`);
+  if (!result[0] || !result[0].values[0]) return null;
+  
+  const cols = result[0].columns;
+  const vals = result[0].values[0];
+  const player = {};
+  cols.forEach((col, i) => player[col] = vals[i]);
+  return player;
+}
+
+function createPlayer(name, userId = null) {
+  try {
+    db.run("INSERT INTO players (user_id, name) VALUES (?, ?)", [userId, name]);
     saveDb();
     return getPlayerByName(name);
   } catch (e) {
@@ -92,11 +215,11 @@ function getPlayerStats(name) {
   const player = getPlayerByName(name);
   if (!player) return null;
   
-  const gamesPlayed = db.exec(`SELECT COUNT(*) as count FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
-  const highScore = db.exec(`SELECT COALESCE(MAX(score), 0) as max FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
-  const totalScore = db.exec(`SELECT COALESCE(SUM(score), 0) as sum FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
-  const totalCoins = db.exec(`SELECT COALESCE(SUM(coins_collected), 0) as sum FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
-  const totalEnemies = db.exec(`SELECT COALESCE(SUM(enemies_stomped), 0) as sum FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
+  const gamesPlayed = db.exec(`SELECT COUNT(*) FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
+  const highScore = db.exec(`SELECT COALESCE(MAX(score), 0) FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
+  const totalScore = db.exec(`SELECT COALESCE(SUM(score), 0) FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
+  const totalCoins = db.exec(`SELECT COALESCE(SUM(coins_collected), 0) FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
+  const totalEnemies = db.exec(`SELECT COALESCE(SUM(enemies_stomped), 0) FROM scores WHERE player_id = ${player.id}`)[0]?.values[0][0] || 0;
   
   return {
     name: player.name,
@@ -137,7 +260,7 @@ function getTopScores(limit = 10) {
 }
 
 function getSetting(key) {
-  const result = db.exec(`SELECT setting_value FROM game_settings WHERE setting_key = '${key}'`);
+  const result = db.exec(`SELECT setting_value FROM game_settings WHERE setting_key = '${key.replace(/'/g, "''")}'`);
   return result[0]?.values[0]?.[0] || null;
 }
 
@@ -158,9 +281,22 @@ function getAllSettings() {
 module.exports = {
   initDb,
   saveDb,
+  users: {
+    create: createUser,
+    get: getUserByUsername,
+    getById: getUserById,
+    getAll: getAllUsers,
+    getPending: getPendingUsers,
+    verify: verifyUser,
+    approve: approveUser,
+    reject: rejectUser,
+    updatePassword: updateUserPassword,
+    updateRole: updateUserRole
+  },
   players: {
     create: createPlayer,
     get: getPlayerByName,
+    getByUserId: getPlayerByUserId,
     getStats: getPlayerStats
   },
   scores: {
